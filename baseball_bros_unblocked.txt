@@ -1,0 +1,54 @@
+Project structure for ZIP:
+
+/baseball-bros-unblocked.zip
+  |
+  |-- index.html
+  |-- vercel.json
+  |-- api/proxy.js
+
+---
+
+index.html:
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Baseball Bros | Unblocked</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; }
+    iframe { width:100%; height:100%; border:none; }
+  </style>
+</head>
+<body>
+  <iframe id="game"></iframe>
+  <script>
+    const target = "https://baseballbros.io/";
+    document.getElementById("game").src = "/api/proxy?url=" + encodeURIComponent(target);
+  </script>
+</body>
+</html>
+
+vercel.json:
+{
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
+
+api/proxy.js:
+export default async function handler(req, res) {
+  try {
+    const target = req.query.url;
+    if (!target) return res.status(400).send("Missing ?url=");
+
+    const response = await fetch(target);
+    const buffer = await response.arrayBuffer();
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", response.headers.get("content-type") || "text/html");
+
+    res.send(Buffer.from(buffer));
+  } catch (e) {
+    res.status(500).send("Proxy error: " + e.message);
+  }
+}
